@@ -9,6 +9,7 @@ from django.views.generic import View
 
 from robots.forms import RobotForm
 from robots.models import Robot
+from robots.signals import robot_created
 from utils import create_excel_file
 
 
@@ -16,21 +17,34 @@ class RobotSingleView(View):
     http_method_names = ["post"]
 
     def post(self, request):
+        """
+        POST: {"model": "string", "version": "string", "serial": Optional["string"], "created": "2010-10-10", "ordered": Optional[False]}
+        :param request:
+        :return:
+        """
+        post_data = request.POST.copy()
         if not request.POST.get("serial"):
-            # Генерация поля `serial` в формате `model`-`version` в случае его отсутствия
-            prev_mutable = request.POST._mutable
-            request.POST._mutable = True
-            request.POST["serial"] = (
+            # Генерация поля `serial` в формате `model`-`version`
+            # в случае его отсутствия
+            post_data["serial"] = (
                 f"{request.POST.get("model", "")}-" f"{request.POST.get("version", "")}"
             )
-            request.POST._mutable = prev_mutable
-        form = RobotForm(request.POST)
+        if not request.POST.get("ordered"):
+            robot_created.send(
+                self.__class__,
+                robot={
+                    "serial": post_data["serial"],
+                    "version": post_data["version"],
+                    "model": post_data["model"],
+                }
+            )
+        form = RobotForm(post_data)
         if form.is_valid():
             created_robot = form.save()
 
             return JsonResponse(model_to_dict(created_robot), status=200)
-        else:
-            return JsonResponse(form.errors, status=400)
+
+        return JsonResponse(form.errors, status=400)
 
 
 EXCEL_COLUMNS_NAMES = ("Модель", "Версия", "Количество за неделю")
