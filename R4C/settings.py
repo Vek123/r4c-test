@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 
+import pika
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -27,6 +29,24 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+SITE_NAME = "Robots Corp."
+
+# SECURITY WARNING: keep email address password used in production secret!
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.yandex.ru'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+
+EMAIL_HOST_USER = 'VekGaming@yandex.ru'
+EMAIL_HOST_PASSWORD = 'djbszbnoucjtafrx'
+
+SERVER_EMAIL = EMAIL_HOST_USER
+EMAIL_ADMIN = EMAIL_HOST_USER
+
+DEFAULT_FROM_EMAIL = "%s <%s>" % (
+    SITE_NAME,
+    "VekGaming@yandex.ru",
+)
 
 # Application definition
 
@@ -123,3 +143,11 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+RABBIT_PARAMS = pika.ConnectionParameters(
+    host="localhost",
+    port=5672,
+    credentials=pika.PlainCredentials("rmuser", "rmpassword"),
+    heartbeat=600,
+    blocked_connection_timeout=300,
+)
