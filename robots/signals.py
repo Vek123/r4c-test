@@ -1,3 +1,5 @@
+from threading import Thread
+
 from django.dispatch import Signal, receiver
 
 from rabbit import get_rabbit_channel
@@ -27,10 +29,13 @@ def send_emails_to_customers(sender, **kwargs):
         ):
             method, properties, body = channel.basic_get(robot["serial"])
             email = body.decode("utf-8")
-            send_email(
-                to_email=email,
-                subject=EMAIL_CREATED_ROBOT_SUBJECT,
-                message=EMAIL_CREATED_ROBOT_MESSAGE
-                % {"model": robot["model"], "version": robot["version"]},
-            )
+            Thread(
+                target=send_email,
+                kwargs={
+                    "to_email": email,
+                    "subject": EMAIL_CREATED_ROBOT_SUBJECT,
+                    "message": EMAIL_CREATED_ROBOT_MESSAGE
+                    % {"model": robot["model"], "version": robot["version"]},
+                },
+            ).start()
             channel.basic_ack(delivery_tag=method.delivery_tag)
